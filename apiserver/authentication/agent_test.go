@@ -6,9 +6,11 @@ package authentication_test
 import (
 	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils"
+	"github.com/juju/names"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/juju/apiserver/authentication"
+	"github.com/juju/juju/apiserver/params"
 	"github.com/juju/juju/juju/testing"
 	"github.com/juju/juju/state"
 	"github.com/juju/juju/testing/factory"
@@ -82,6 +84,10 @@ type testCase struct {
 	errorMessage string
 }
 
+func (t *testCase) FindEntity(tag names.Tag) (state.Entity, error) {
+	return t.entity, nil
+}
+
 func (s *agentAuthenticatorSuite) TestValidLogins(c *gc.C) {
 	testCases := []testCase{{
 		entity:      s.user,
@@ -101,8 +107,12 @@ func (s *agentAuthenticatorSuite) TestValidLogins(c *gc.C) {
 	for i, t := range testCases {
 		c.Logf("test %d: %s", i, t.about)
 		var authenticator authentication.AgentAuthenticator
-		err := authenticator.Authenticate(t.entity, t.credentials, t.nonce)
+		entity, err := authenticator.Authenticate(&t, nil, params.LoginRequest{
+			Credentials: t.credentials,
+			Nonce:       t.nonce,
+		})
 		c.Check(err, jc.ErrorIsNil)
+		c.Check(entity, gc.DeepEquals, t.entity)
 	}
 }
 
@@ -133,7 +143,10 @@ func (s *agentAuthenticatorSuite) TestInvalidLogins(c *gc.C) {
 	for i, t := range testCases {
 		c.Logf("test %d: %s", i, t.about)
 		var authenticator authentication.AgentAuthenticator
-		err := authenticator.Authenticate(t.entity, t.credentials, t.nonce)
+		err := authenticator.Authenticate(t.entity, nil, params.LoginRequest{
+			Credentials: t.credentials,
+			Nonce:       t.nonce,
+		})
 		c.Check(err, gc.ErrorMatches, t.errorMessage)
 	}
 }

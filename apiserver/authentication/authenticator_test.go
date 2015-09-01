@@ -8,6 +8,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/juju/apiserver/authentication"
+	"github.com/juju/juju/apiserver/params"
 	"github.com/juju/juju/juju/testing"
 	"github.com/juju/juju/testing/factory"
 )
@@ -38,6 +39,9 @@ func (s *AgentAuthenticatorSuite) TestFindEntityAuthenticator(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(authenticator, gc.NotNil)
 
-	err = authenticator.Authenticate(user, "password", "nonce")
+	err = authenticator.Authenticate(user, params.LoginRequest{
+		Credentials: "password",
+		Nonce:       "nonce",
+	})
 	c.Assert(err, jc.ErrorIsNil)
 }

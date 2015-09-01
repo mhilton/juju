@@ -7,8 +7,10 @@ import (
 	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils"
 	gc "gopkg.in/check.v1"
+	"gopkg.in/macaroon.v1"
 
 	"github.com/juju/juju/apiserver/authentication"
+	"github.com/juju/juju/apiserver/params"
 	jujutesting "github.com/juju/juju/juju/testing"
 	"github.com/juju/juju/state"
 	"github.com/juju/juju/testing/factory"
@@ -36,7 +38,10 @@ func (s *userAuthenticatorSuite) TestMachineLoginFails(c *gc.C) {
 
 	// attempt machine login
 	authenticator := &authentication.UserAuthenticator{}
-	err = authenticator.Authenticate(machine, machinePassword, nonce)
+	err = authenticator.Authenticate(machine, params.LoginRequest{
+		Credentials: machinePassword,
+		Nonce:       nonce,
+	})
 	c.Assert(err, gc.ErrorMatches, "invalid request")
 }
 
@@ -53,7 +58,10 @@ func (s *userAuthenticatorSuite) TestUnitLoginFails(c *gc.C) {
 
 	// Attempt unit login
 	authenticator := &authentication.UserAuthenticator{}
-	err = authenticator.Authenticate(unit, unitPassword, "")
+	err = authenticator.Authenticate(unit, params.LoginRequest{
+		Credentials: unitPassword,
+		Nonce:       "",
+	})
 	c.Assert(err, gc.ErrorMatches, "invalid request")
 }
 
@@ -66,7 +74,10 @@ func (s *userAuthenticatorSuite) TestValidUserLogin(c *gc.C) {
 
 	// User login
 	authenticator := &authentication.UserAuthenticator{}
-	err := authenticator.Authenticate(user, "password", "")
+	err := authenticator.Authenticate(user, params.LoginRequest{
+		Credentials: "password",
+		Nonce:       "",
+	})
 	c.Assert(err, jc.ErrorIsNil)
 }
 
@@ -79,7 +90,10 @@ func (s *userAuthenticatorSuite) TestUserLoginWrongPassword(c *gc.C) {
 
 	// User login
 	authenticator := &authentication.UserAuthenticator{}
-	err := authenticator.Authenticate(user, "wrongpassword", "")
+	err := authenticator.Authenticate(user, params.LoginRequest{
+		Credentials: "wrongpassword",
+		Nonce:       "",
+	})
 	c.Assert(err, gc.ErrorMatches, "invalid entity name or password")
 
 }
@@ -98,7 +112,27 @@ func (s *userAuthenticatorSuite) TestInvalidRelationLogin(c *gc.C) {
 
 	// Attempt relation login
 	authenticator := &authentication.UserAuthenticator{}
-	err = authenticator.Authenticate(relation, "dummy-secret", "")
+	err = authenticator.Authenticate(relation, params.LoginRequest{
+		Credentials: "dummy-secret",
+		Nonce:       "",
+	})
 	c.Assert(err, gc.ErrorMatches, "invalid request")
+
+}
+
+func (s *userAuthenticatorSuite) TestMacaroonAuthenticatorReturnErrorIfNoMacaroons(c *gc.C) {
+	user := s.Factory.MakeUser(c, &factory.UserParams{
+		Name:        "bobbrown",
+		DisplayName: "Bob Brown",
+		Password:    "password",
+	})
+
+	authenticator := &authentication.MacaroonAuthenticator{}
+	err := authenticator.Authenticate(user, params.LoginRequest{
+		Credentials: "",
+		Nonce:       "",
+		Macaroons:   macaroon.Slice{},
+	})
+	c.Assert(err, gc.ErrorMatches, "discharge required")
 
 }

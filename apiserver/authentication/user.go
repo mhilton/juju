@@ -4,11 +4,15 @@
 package authentication
 
 import (
-	"github.com/juju/juju/apiserver/common"
+	"github.com/juju/errors"
+	"github.com/juju/names"
+	"gopkg.in/macaroon-bakery.v0/bakery"
+
+	"github.com/juju/juju/apiserver/params"
 	"github.com/juju/juju/state"
 )
 
-// UserIdentityProvider performs authentication for users.
+// UserAuthenticator performs authentication for users.
 type UserAuthenticator struct {
 	AgentAuthenticator
 }
@@ -27,10 +31,25 @@ var _ EntityAuthenticator = (*UserAuthenticator)(nil)
 // TODO: Verify macaroons -> logged in
 
 // Authenticate authenticates the provided entity and returns an error on authentication failure.
-func (u *UserAuthenticator) Authenticate(entity state.Entity, password, nonce string) error {
-	if _, ok := entity.(*state.User); ok {
-		return u.AgentAuthenticator.Authenticate(entity, password, nonce)
-	}
-
-	return common.ErrBadRequest
+/*
+//TODO Probably don't need this type anymore
+func (u *UserAuthenticator) Authenticate(req params.LoginRequest) (*state.Entity, error) {
+	return u.AgentAuthenticator.Authenticate(req)
 }
+*/
+
+// MacaroonAuthenticator performs authentication for users using macaroons.
+type MacaroonAuthenticator struct {
+	Service *bakery.Service
+}
+
+var _ EntityAuthenticator = (*MacaroonAuthenticator)(nil)
+
+// Authenticate authenticates the provided entity and returns an error on authentication failure.
+func (m *MacaroonAuthenticator) Authenticate(entityFinder EntityFinder, tag names.Tag, req params.LoginRequest) (state.Entity, error) {
+	if len(req.Macaroons) == 0 {
+		return nil, errors.Errorf("discharge required")
+	}
+	return nil, nil
+}
+
