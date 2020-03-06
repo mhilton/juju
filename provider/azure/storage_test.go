@@ -531,8 +531,8 @@ func (s *storageSuite) TestListVolumes(c *gc.C) {
 	}, {
 		Name: to.StringPtr("volume-1"),
 	}}
-	volumeSender := azuretesting.NewSenderWithValue(map[string][]disk{
-		"value": disks,
+	volumeSender := azuretesting.NewSenderWithValue(compute.DiskList{
+		Value: &disks,
 	})
 	volumeSender.PathPattern = `.*/Microsoft\.Compute/disks`
 	s.sender = azuretesting.Senders{volumeSender}
@@ -1039,8 +1039,8 @@ func (s *storageSuite) TestDetachVolumesFinal(c *gc.C) {
 	}}
 
 	// There should be a one API call to list VMs, and one update to the VM.
-	virtualMachinesSender := azuretesting.NewSenderWithValue(map[string]*[]virtualMachine{
-		"value": &virtualMachines,
+	virtualMachinesSender := azuretesting.NewSenderWithValue(compute.VirtualMachineListResult{
+		Value: &virtualMachines,
 	})
 	virtualMachinesSender.PathPattern = `.*/Microsoft\.Compute/virtualMachines`
 	updateVirtualMachine0Sender := azuretesting.NewSenderWithValue(&compute.VirtualMachine{})
